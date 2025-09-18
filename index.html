@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portfolio Photographe</title>
+  <link rel="stylesheet" href="./style.css?v=1"/>
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="logo">Enar</div>
+    <nav class="nav">
+      <a href="#galerie">Galerie</a>
+      <a href="#contact">Contact</a>
+      <button id="switchWorld" class="btn-alt">Mon monde</button>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-media">
+      <img
+        id="heroImg"
+        src="assets/img/hero.jpg"
+        data-alt="assets/img/hero_alt.jpg"
+        alt="Hero"
+        loading="eager"
+      />
+    </div>
+    <div class="hero-content">
+      <h1>Immortaliser l’instant</h1>
+      <p>Chaque cliché raconte une histoire — entrez dans mon univers.</p>
+      <a href="#galerie" class="btn">Voir la galerie</a>
+    </div>
+  </section>
+
+  <!-- Galerie -->
+  <section id="galerie" class="gallery section">
+    <h2>Galerie</h2>
+    <div class="grid">
+      <img src="assets/img/photo1.jpg" data-alt="assets/img/photo1_alt.jpg" alt="Photo 1" loading="lazy"/>
+      <img src="assets/img/photo2.jpg" data-alt="assets/img/photo2_alt.jpg" alt="Photo 2" loading="lazy"/>
+      <img src="assets/img/photo3.jpg" data-alt="assets/img/photo3_alt.jpg" alt="Photo 3" loading="lazy"/>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="contact section">
+    <h2>Contact</h2>
+    <form>
+      <input type="text" placeholder="Votre nom" required>
+      <input type="email" placeholder="Votre email" required>
+      <textarea placeholder="Votre message"></textarea>
+      <button type="submit" class="btn">Envoyer</button>
+    </form>
+  </section>
+
+  <footer class="footer">
+    <p>© 2025 Enar — Portfolio Photographique</p>
+  </footer>
+
+  <script src="./script.js?v=1"></script>
+</body>
+</html>
