@@ -1,0 +1,15 @@
+https://www.piskelapp.com/p/create/sprite/
+https://onlinepngtools.com/create-transparent-png
+
+Assets à préparer
+
+Élément	Dimensions	Outil recommandé
+Graine/Cœur petit (menu droit)	64x64px	DALL-E ou Piskel
+Pousse 1h - Frame 1	96x96px	DALL-E ou Piskel
+Pousse 1h - Frame 2	96x96px	DALL-E ou Piskel
+Pousse 1h - Frame 3	96x96px	DALL-E ou Piskel
+Arbre 24h - Frame 1	128x128px	DALL-E ou Piskel
+Arbre 24h - Frame 2	128x128px	DALL-E ou Piskel
+Arbre 24h - Frame 3	128x128px	DALL-E ou Piskel
+Icône Pelle	48x48px	DALL-E ou Piskel
+Texture Herbe/Fond	512x512px (tileable)	OpenGameArt.org ou DALL-E
