@@ -1,33 +1,38 @@
 /**
- * Valentine Garden - Game Logic
- * Grille 100x100, drag & drop, timestamps, animations
+ * Valentine Garden - Canvas Version
+ * Optimisée avec Canvas pour meilleure performance
  */
 
 // Configuration
 const CONFIG = {
   PIN: '1234',
   GRID_SIZE: 100,
+  CELL_SIZE: 64,
   TREE_GOAL: 14,
-  SPROUT_DURATION: 3600000, // 1 heure en ms
-  TREE_DURATION: 86400000, // 24 heures en ms
-  ANIMATION_SPEED: 1000, // ms par frame
+  SPROUT_DURATION: 10000, // 1 heure en ms
+  TREE_DURATION: 60000, // 10 minutes en ms (pour test)
   EMAIL: 'daniel.guedj.pro@gmail.com'
 };
 
 // State
 const gameState = {
-  grid: {}, // { "row-col": { type, plantedAt, ... } }
+  grid: {},
   draggedTool: null,
   isAuthenticated: false,
-  valentineShown: false
+  valentineShown: false,
+  scrollX: 0,
+  scrollY: 0,
+  images: {}
 };
+
+// Canvas & context
+let canvas, ctx;
 
 // ========== AUTHENTIFICATION ==========
 function setupAuth() {
   const pinInput = document.getElementById('pinInput');
   const pinSubmit = document.getElementById('pinSubmit');
   
-  // Entrée directe du PIN avec Entrée
   pinInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       checkPin();
@@ -70,39 +75,43 @@ function loadGameState() {
   }
 }
 
-// ========== INITIALISATION GRILLE ==========
+// ========== INITIALISATION ==========
 function initGame() {
-  const gameGrid = document.getElementById('gameGrid');
-  gameGrid.innerHTML = '';
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
   
-  for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
-    for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
-      const cellId = `${row}-${col}`;
-      const cell = document.createElement('div');
-      cell.className = 'grid-cell';
-      cell.id = cellId;
-      cell.dataset.row = row;
-      cell.dataset.col = col;
-      
-      // Ajouter plante si elle existe
-      if (gameState.grid[cellId]) {
-        addPlantToCell(cell, cellId);
-      }
-      
-      // Event listeners drag & drop
-      cell.addEventListener('dragover', handleDragOver);
-      cell.addEventListener('drop', (e) => handleDrop(e, cellId));
-      cell.addEventListener('dragleave', handleDragLeave);
-      
-      gameGrid.appendChild(cell);
-    }
-  }
+  // Redimensionner canvas
+  const container = canvas.parentElement;
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
   
-  // Démarrer boucle d'animation
-  startAnimationLoop();
+  // Charger les images
+  loadAssets();
   
-  // Mettre à jour le compteur
-  updateTreeCount();
+  // Event listeners
+  canvas.addEventListener('dragover', handleCanvasDragOver);
+  canvas.addEventListener('drop', handleCanvasDrop);
+  canvas.addEventListener('dragleave', handleCanvasDragLeave);
+  canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+  canvas.addEventListener('click', handleCanvasClick);
+  
+  // Démarrer boucle
+  startGameLoop();
+}
+
+// ========== CHARGEMENT ASSETS ==========
+function loadAssets() {
+  const assets = [
+    'grass', 'seeds', 'shovel',
+    'sprout_1', 'sprout_2', 'sprout_3',
+    'tree_1', 'tree_2', 'tree_3'
+  ];
+  
+  assets.forEach(name => {
+    const img = new Image();
+    img.src = `assets/img/${name}.png`;
+    gameState.images[name] = img;
+  });
 }
 
 // ========== DRAG & DROP ==========
@@ -122,139 +131,192 @@ function setupDragDrop() {
   });
 }
 
-function handleDragOver(e) {
+function handleCanvasDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'copy';
-  e.currentTarget.classList.add('drag-over');
 }
 
-function handleDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
+function handleCanvasDragLeave(e) {
+  // Nothing needed
 }
 
-function handleDrop(e, cellId) {
+function handleCanvasDrop(e) {
   e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
   
   if (!gameState.draggedTool) return;
   
-  const cell = document.getElementById(cellId);
+  // Calculer position sur la grille
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left + gameState.scrollX;
+  const y = e.clientY - rect.top + gameState.scrollY;
+  
+  const col = Math.floor(x / CONFIG.CELL_SIZE);
+  const row = Math.floor(y / CONFIG.CELL_SIZE);
+  
+  // Vérifier limites
+  if (row < 0 || row >= CONFIG.GRID_SIZE || col < 0 || col >= CONFIG.GRID_SIZE) {
+    return;
+  }
+  
+  const cellId = `${row}-${col}`;
   
   if (gameState.draggedTool === 'seedTool') {
-    // Planter une graine
     if (!gameState.grid[cellId]) {
       gameState.grid[cellId] = {
         type: 'sprout',
         stage: 1,
         plantedAt: Date.now()
       };
-      addPlantToCell(cell, cellId);
       saveGameState();
       updateTreeCount();
     }
   } else if (gameState.draggedTool === 'shovelTool') {
-    // Retirer une plante
     if (gameState.grid[cellId]) {
       delete gameState.grid[cellId];
-      cell.classList.remove('has-plant');
-      cell.innerHTML = '';
       saveGameState();
       updateTreeCount();
     }
   }
 }
 
-// ========== GESTION PLANTES ==========
-function addPlantToCell(cell, cellId) {
-  const plant = gameState.grid[cellId];
-  if (!plant) return;
+function handleCanvasWheel(e) {
+  e.preventDefault();
   
-  cell.classList.add('has-plant');
-  cell.innerHTML = '';
+  const speed = 20;
+  gameState.scrollY += e.deltaY > 0 ? speed : -speed;
+  gameState.scrollX += e.deltaX > 0 ? speed : -speed;
   
-  const plantDiv = document.createElement('div');
-  plantDiv.className = 'plant';
-  plantDiv.dataset.cellId = cellId;
+  // Limiter scroll
+  const maxScrollX = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE - canvas.width;
+  const maxScrollY = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE - canvas.height;
   
-  const img = document.createElement('img');
-  img.dataset.type = plant.type;
-  img.dataset.stage = plant.stage;
-  updatePlantImage(img, plant);
-  
-  // Clic pour retirer rapidement
-  plantDiv.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const shovelTool = document.getElementById('shovelTool');
-    gameState.draggedTool = 'shovelTool';
-    handleDrop(e, cellId);
-    gameState.draggedTool = null;
-  });
-  
-  plantDiv.appendChild(img);
-  cell.appendChild(plantDiv);
+  gameState.scrollX = Math.max(0, Math.min(gameState.scrollX, maxScrollX));
+  gameState.scrollY = Math.max(0, Math.min(gameState.scrollY, maxScrollY));
 }
 
-function updatePlantImage(img, plant) {
-  if (plant.type === 'sprout') {
-    img.src = `assets/img/sprout_${plant.stage}.png`;
-  } else if (plant.type === 'tree') {
-    img.src = `assets/img/tree_${plant.stage}.png`;
+function handleCanvasClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left + gameState.scrollX;
+  const y = e.clientY - rect.top + gameState.scrollY;
+  
+  const col = Math.floor(x / CONFIG.CELL_SIZE);
+  const row = Math.floor(y / CONFIG.CELL_SIZE);
+  
+  if (row < 0 || row >= CONFIG.GRID_SIZE || col < 0 || col >= CONFIG.GRID_SIZE) {
+    return;
+  }
+  
+  const cellId = `${row}-${col}`;
+  if (gameState.grid[cellId]) {
+    // Clic sur plante = retirer avec pelle
+    delete gameState.grid[cellId];
+    saveGameState();
+    updateTreeCount();
   }
 }
 
-// ========== ANIMATION & TIMESTAMPS ==========
-function startAnimationLoop() {
-  let updateCounter = 0;
+// ========== BOUCLE DE JEU ==========
+function startGameLoop() {
+  let lastSaveTime = Date.now();
   
   setInterval(() => {
+    // Mettre à jour animations
     Object.keys(gameState.grid).forEach(cellId => {
       const plant = gameState.grid[cellId];
       if (!plant) return;
       
       const elapsed = Date.now() - plant.plantedAt;
-      const cell = document.getElementById(cellId);
-      if (!cell) return;
       
-      // Transition sprout → tree après 1h
+      // Transition sprout → tree
       if (plant.type === 'sprout' && elapsed >= CONFIG.SPROUT_DURATION) {
         plant.type = 'tree';
         plant.stage = 1;
-        saveGameState();
-        updatePlantInCell(cell, plant);
       }
       
-      // Animation frames: 1, 2, 3, 1, 2, 3...
-      if (plant.type === 'sprout') {
-        const frameTime = (elapsed % (CONFIG.ANIMATION_SPEED * 3));
-        const frame = Math.floor(frameTime / CONFIG.ANIMATION_SPEED) + 1;
-        plant.stage = Math.min(3, Math.max(1, frame));
-      } else if (plant.type === 'tree') {
-        const treeElapsed = elapsed - CONFIG.SPROUT_DURATION;
-        const frameTime = (treeElapsed % (CONFIG.ANIMATION_SPEED * 3));
-        const frame = Math.floor(frameTime / CONFIG.ANIMATION_SPEED) + 1;
-        plant.stage = Math.min(3, Math.max(1, frame));
-      }
+      // Animation: 1, 2, 1, 3, 1, 2, 1, 3...
+      const cycleDuration = 7000;
+      const positionInCycle = elapsed % cycleDuration;
       
-      updatePlantInCell(cell, plant);
+      let newStage = 1;
+      if (positionInCycle < 1000) newStage = 1;
+      else if (positionInCycle < 3000) newStage = 2;
+      else if (positionInCycle < 4000) newStage = 1;
+      else newStage = 3;
+      
+      plant.stage = newStage;
     });
     
-    // Mettre à jour le compteur d'arbres tous les 5 ticks
-    updateCounter++;
-    if (updateCounter >= 5) {
-      updateTreeCount();
-      updateCounter = 0;
+    // Dessiner
+    drawGame();
+    
+    // Mettre à jour compteur
+    updateTreeCount();
+    
+    // Sauvegarder moins souvent
+    if (Date.now() - lastSaveTime > 2000) {
+      saveGameState();
+      lastSaveTime = Date.now();
     }
-  }, 100);
+  }, 50);
 }
 
-function updatePlantInCell(cell, plant) {
-  const plantDiv = cell.querySelector('.plant');
-  if (!plantDiv) return;
+// ========== DESSIN ==========
+function drawGame() {
+  // Fond
+  ctx.fillStyle = '#6bb347';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  const img = plantDiv.querySelector('img');
-  if (img) {
-    updatePlantImage(img, plant);
+  // Tuiles herbe
+  const grassImg = gameState.images['grass'];
+  if (grassImg.complete) {
+    const startCol = Math.floor(gameState.scrollX / CONFIG.CELL_SIZE);
+    const startRow = Math.floor(gameState.scrollY / CONFIG.CELL_SIZE);
+    const endCol = startCol + Math.ceil(canvas.width / CONFIG.CELL_SIZE) + 1;
+    const endRow = startRow + Math.ceil(canvas.height / CONFIG.CELL_SIZE) + 1;
+    
+    for (let row = startRow; row < endRow && row < CONFIG.GRID_SIZE; row++) {
+      for (let col = startCol; col < endCol && col < CONFIG.GRID_SIZE; col++) {
+        const x = col * CONFIG.CELL_SIZE - gameState.scrollX;
+        const y = row * CONFIG.CELL_SIZE - gameState.scrollY;
+        
+        ctx.drawImage(grassImg, x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+        
+        // Grille de border
+        ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+      }
+    }
   }
+  
+  // Dessiner les plantes
+  Object.keys(gameState.grid).forEach(cellId => {
+    const plant = gameState.grid[cellId];
+    const [row, col] = cellId.split('-').map(Number);
+    
+    const x = col * CONFIG.CELL_SIZE - gameState.scrollX;
+    const y = row * CONFIG.CELL_SIZE - gameState.scrollY;
+    
+    // Skip si hors de l'écran
+    if (x < -CONFIG.CELL_SIZE || x > canvas.width || 
+        y < -CONFIG.CELL_SIZE || y > canvas.height) {
+      return;
+    }
+    
+    const imgName = plant.type === 'sprout' 
+      ? `sprout_${plant.stage}`
+      : `tree_${plant.stage}`;
+    
+    const img = gameState.images[imgName];
+    if (img && img.complete) {
+      // Centrer l'image dans la cellule
+      const imgSize = plant.type === 'sprout' ? 96 : 128;
+      const offsetX = (CONFIG.CELL_SIZE - imgSize) / 2;
+      const offsetY = (CONFIG.CELL_SIZE - imgSize) / 2;
+      
+      ctx.drawImage(img, x + offsetX, y + offsetY, imgSize, imgSize);
+    }
+  });
 }
 
 // ========== COMPTEUR ARBRES ==========
@@ -264,7 +326,6 @@ function updateTreeCount() {
   Object.keys(gameState.grid).forEach(cellId => {
     const plant = gameState.grid[cellId];
     if (plant && plant.type === 'tree') {
-      // Un arbre compte que s'il a vécu 24h
       const elapsed = Date.now() - plant.plantedAt;
       if (elapsed >= CONFIG.TREE_DURATION) {
         treeCount++;
@@ -274,10 +335,12 @@ function updateTreeCount() {
   
   const treeCountEl = document.getElementById('treeCount');
   if (treeCountEl) {
-    treeCountEl.textContent = treeCount;
+    const currentCount = parseInt(treeCountEl.textContent);
+    if (currentCount !== treeCount) {
+      treeCountEl.textContent = treeCount;
+    }
   }
   
-  // Vérifier si on a atteint 14 arbres
   if (treeCount >= CONFIG.TREE_GOAL) {
     showValentinePopup();
   }
@@ -285,7 +348,7 @@ function updateTreeCount() {
 
 // ========== POPUP VALENTINE ==========
 function showValentinePopup() {
-  if (gameState.valentineShown) return; // Ne pas afficher 2 fois
+  if (gameState.valentineShown) return;
   
   const modal = document.getElementById('valentineModal');
   if (modal.classList.contains('hidden')) {
@@ -308,13 +371,10 @@ function showValentinePopup() {
 
 // ========== ENVOI EMAIL ==========
 function sendEmail(response) {
-  // Créer un formdata pour envoyer à FormSubmit
-  // Tu dois remplacer "your-form-id" par ton vrai ID de FormSubmit
   const formData = new FormData();
   formData.append('response', response);
-  formData.append('_cc', CONFIG.EMAIL);
   
-  fetch('https://formspree.io/f/YOUR_FORM_ID', {
+  fetch('https://formspree.io/f/mojdbjvq', {
     method: 'POST',
     body: formData,
     headers: {
@@ -323,7 +383,9 @@ function sendEmail(response) {
   })
   .then(response => {
     if (response.ok) {
-      console.log('Email envoyé avec succès!');
+      console.log('Email envoyé!');
+    } else {
+      console.error('Erreur email:', response.status);
     }
   })
   .catch(error => console.error('Erreur:', error));
