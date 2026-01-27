@@ -12,4 +12,4 @@ Arbre 24h - Frame 1	128x128px	DALL-E ou Piskel
 Arbre 24h - Frame 2	128x128px	DALL-E ou Piskel
 Arbre 24h - Frame 3	128x128px	DALL-E ou Piskel
 Icône Pelle	48x48px	DALL-E ou Piskel
-Texture Herbe/Fond	512x512px (tileable)	OpenGameArt.org ou DALL-E
+Texture Herbe/Fond	64*64
