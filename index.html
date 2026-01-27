@@ -3,10 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Portfolio Photographe</title>
+  <title>Valentine Garden 🌹</title>
   <link rel="stylesheet" href="./style.css?v=1"/>
 </head>
 <body>
+  <!-- Modal Authentification PIN -->
+  <div id="pinModal" class="pin-modal">
+    <div class="pin-container">
+      <h1>🌹 Valentine Garden 🌹</h1>
+      <p>Entrez le code PIN</p>
+      <input 
+        type="password" 
+        id="pinInput" 
+        maxlength="4" 
+        inputmode="numeric" 
+        placeholder="••••"
+      />
+      <button id="pinSubmit">Accéder</button>
+    </div>
+  </div>
+
+  <!-- Jeu Principal -->
+  <div id="gameContainer" class="hidden">
+    <!-- Header -->
+    <header class="game-header">
+      <h1>🌹 Valentine Garden 🌹</h1>
+      <div class="quest-bar">
+        <span>Arbres plantés: <strong id="treeCount">0</strong>/14</span>
+      </div>
+    </header>
+
+    <!-- Grille de jeu (100x100) -->
+    <div class="game-area">
+      <div id="gameGrid" class="game-grid"></div>
+    </div>
+
+    <!-- Menu latéral droit -->
+    <aside class="sidebar">
+      <div class="tool-item" id="seedTool" draggable="true">
+        <img src="assets/img/seeds.png" alt="Graine"/>
+        <p>Graine</p>
+      </div>
+      <div class="tool-item" id="shovelTool" draggable="true">
+        <img src="assets/img/shovel.png" alt="Pelle"/>
+        <p>Pelle</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal Valentine Popup -->
+  <div id="valentineModal" class="valentine-modal hidden">
+    <div class="valentine-container">
+      <div class="hearts">💕 💕 💕</div>
+      <h2>Veux-tu être ma Valentine?</h2>
+      <div class="button-group">
+        <button id="yesBtn" class="btn-yes">Oui ♥️</button>
+        <button id="noBtn" class="btn-no">Non</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
   <!-- Header -->
   <header class="site-header">
     <div class="logo">Enar</div>

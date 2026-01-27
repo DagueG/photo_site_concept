@@ -1,190 +1,424 @@
 /* ================================
-   Variables par défaut = thème lumineux
+   Valentine Garden - Stardew Valley Style
 ================================ */
+
 :root {
-  --bg: #fefdfb;
-  --surface: #ffffff;
-  --text: #2d2d2d;
-  --muted: #5c5c5c;
-  --accent: #e76f51;   /* orange coucher de soleil */
-  --accent-2: #2a9d8f; /* bleu lagon */
-  --card-radius: 14px;
-  --shadow: 0 6px 18px rgba(0,0,0,.1);
-  --transition: .6s cubic-bezier(.2,.7,.2,1);
+  --grass-1: #5a9d3c;
+  --grass-2: #6bb347;
+  --dirt: #8b6f47;
+  --text-dark: #2d1b1b;
+  --text-light: #f5f1de;
+  --heart-red: #ff6b9d;
+  --heart-light: #ffb3c1;
+  --wood: #a0826d;
+  --shadow: 0 4px 8px rgba(0,0,0,0.2);
+  --soft-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-* { margin:0; padding:0; box-sizing:border-box }
-html, body { height:100% }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(180deg, #fceabb 0%, #fefdfb 100%);
-  color: var(--text);
-  line-height: 1.6;
-  overflow-x: hidden;
-  transition: background 1s ease, color 1s ease, filter 1s ease;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, var(--grass-1) 0%, var(--grass-2) 100%);
+  color: var(--text-dark);
+  position: relative;
 }
 
 /* ================================
    Header
 ================================ */
-.site-header {
-  position: sticky; top:0; z-index:50;
-  height:64px;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:0 24px;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0,0,0,.05);
-  transition: background 1s ease, border-color 1s ease;
-}
-.logo { font-weight:700; letter-spacing:.5px }
-.nav a, .nav button {
-  color: var(--text); text-decoration:none; margin-left:14px;
-  background:transparent; border:none; cursor:pointer; font-weight:600;
-  padding:8px 12px; border-radius:10px; transition: background .25s,color .25s;
-}
-.nav a:hover, .nav button:hover { background: rgba(0,0,0,.05); }
 
-/* Boutons */
-.btn, .btn-alt {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color:#fff; padding:10px 16px; border:none; border-radius:999px; cursor:pointer;
-  font-weight:700; letter-spacing:.2px; box-shadow: var(--shadow);
-  transition: transform .2s ease, filter .2s ease, background 0.8s ease;
-}
-.btn:hover, .btn-alt:hover { transform: translateY(-2px); filter: brightness(1.05); }
-
-/* ================================
-   Hero
-================================ */
-.hero {
-  position:relative; min-height:72vh; display:grid; place-items:center;
-  padding:80px 24px 32px;
-}
-.hero-media {
-  position:absolute; inset:0; z-index:-1; overflow:hidden; border-radius:0 0 32px 32px;
-}
-.hero-media img {
-  width:100%; height:100%; object-fit:cover;
-  filter: saturate(1.3) contrast(1.05) brightness(1.05);
-  transform: scale(1.025);
-  transition: transform 2s ease, filter 1.2s ease;
-}
-.hero-content { max-width:800px; text-align:center }
-.hero h1 { font-size: clamp(2rem, 5vw, 4rem); line-height:1.1; letter-spacing:.5px }
-.hero p { margin:14px auto 26px; color: var(--muted); max-width:700px }
-
-/* ================================
-   Sections
-================================ */
-.section { padding:64px 24px }
-.gallery h2, .contact h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin-bottom:18px }
-.grid {
-  display:grid; gap:16px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-.grid img {
-  width:100%; height:320px; object-fit:cover; border-radius: var(--card-radius);
+.game-header {
+  background: linear-gradient(90deg, var(--grass-1), var(--grass-2));
+  padding: 15px 20px;
+  border-bottom: 4px solid var(--wood);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   box-shadow: var(--shadow);
-  filter: saturate(1.15) brightness(1.05);
-  transition: transform .5s ease, filter .6s ease, box-shadow .5s ease;
-}
-.grid img:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 40px rgba(0,0,0,.25); }
-
-/* Contact */
-.contact form {
-  max-width:520px; margin: 0 auto; display:flex; flex-direction:column; gap:12px;
-}
-.contact input, .contact textarea {
-  background: #fff; border:1px solid rgba(0,0,0,.1);
-  border-radius: 12px; color: var(--text); padding:14px 16px; font-size:16px;
-  transition: border .25s ease, box-shadow .25s ease;
-}
-.contact textarea { min-height:140px; resize:vertical }
-.contact input:focus, .contact textarea:focus {
-  outline:none; border-color: var(--accent-2);
-  box-shadow: 0 0 0 6px rgba(42,157,143,.15);
 }
 
-/* Footer */
-.footer {
-  padding:26px; text-align:center; color: var(--muted);
-  border-top:1px solid rgba(0,0,0,.05);
-  transition: color 0.8s ease, border-color 0.8s ease;
+.game-header h1 {
+  color: var(--text-light);
+  font-size: 1.8em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.quest-bar {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
+  border-radius: 10px;
+  color: var(--text-light);
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.quest-bar strong {
+  color: var(--heart-red);
+  font-size: 1.2em;
 }
 
 /* ================================
-   Transition
+   Game Area
 ================================ */
-body.transitioning {
-  filter: blur(6px) brightness(0.9);
+
+.game-area {
+  flex: 1;
+  display: flex;
+  position: relative;
+  background: linear-gradient(45deg, var(--grass-1), var(--grass-2));
+  overflow: hidden;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(100, 64px);
+  grid-template-rows: repeat(100, 64px);
+  gap: 0;
+  overflow: auto;
+  position: relative;
+  background-image: url('assets/img/grass.png');
+  background-size: 64px 64px;
+  cursor: grab;
+}
+
+.game-grid:active {
+  cursor: grabbing;
+}
+
+.grid-cell {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.05);
+  overflow: hidden;
+  user-select: none;
+}
+
+.grid-cell.has-plant {
+  cursor: pointer;
+}
+
+.plant {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  transition: filter 0.1s;
+}
+
+.plant:hover {
+  filter: brightness(1.1);
+}
+
+.plant img {
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* ================================
-   Thème Vintage (après transition)
+   Sidebar
 ================================ */
-body.vintage {
-  --bg: #1a1410;
-  --surface: #2a1f1a;
-  --text: #f5e9da;
-  --muted: #bba58b;
-  --accent: #c9974c; /* doré/cuivre */
-  --accent-2: #8c5c3c; /* brun chaud */
-  background: radial-gradient(1200px 800px at 70% 0%, #2a1f1a, #1a1410 70%);
-  font-family: 'Lora', serif;
-  color: var(--text);
+
+.sidebar {
+  width: 90px;
+  background: linear-gradient(135deg, var(--wood) 0%, #9a7463 100%);
+  border-left: 4px solid #6b5344;
+  padding: 15px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+  overflow-y: auto;
 }
 
-/* Vintage header */
-body.vintage .site-header {
-  background: rgba(40, 30, 20, 0.85);
-  border-bottom: 1px solid rgba(201,151,76,0.3);
-}
-body.vintage .nav a, 
-body.vintage .nav button { color: var(--text); }
-body.vintage .nav a:hover, 
-body.vintage .nav button:hover { background: rgba(201,151,76,0.15); }
-
-/* Vintage hero */
-body.vintage .hero-media img {
-  filter: sepia(0.6) contrast(1.15) brightness(0.9);
-}
-body.vintage .hero h1 {
-  font-family: 'Playfair Display', serif;
-  font-weight: 600;
-  color: #fffdf5; /* blanc crème clair */
-  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
-}
-body.vintage .hero p { color: var(--muted); }
-
-/* Vintage gallery */
-body.vintage .grid img {
-  filter: sepia(0.5) contrast(1.1) brightness(0.9);
-  border: 2px solid rgba(201,151,76,0.25);
+.tool-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--heart-light), #ffc9d8);
+  border-radius: 12px;
+  cursor: grab;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid var(--heart-red);
+  user-select: none;
 }
 
-/* Vintage buttons */
-body.vintage .btn, 
-body.vintage .btn-alt {
-  background: linear-gradient(135deg, #c9974c, #8c5c3c);
-  color: #fff;
-  font-family: 'Cormorant Garamond', serif;
+.tool-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
 }
 
-/* Vintage contact form */
-body.vintage .contact input, 
-body.vintage .contact textarea {
-  background: #241a15;
-  border: 1px solid rgba(201,151,76,0.3);
-  color: var(--text);
-}
-body.vintage .contact input:focus, 
-body.vintage .contact textarea:focus {
-  border-color: #c9974c;
-  box-shadow: 0 0 0 6px rgba(201,151,76,.15);
+.tool-item:active {
+  cursor: grabbing;
 }
 
-/* Vintage footer */
+.tool-item img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+
+.tool-item p {
+  font-size: 0.8em;
+  text-align: center;
+  color: var(--text-dark);
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* ================================
+   Valentine Modal
+================================ */
+
+.valentine-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(45, 27, 27, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+}
+
+.valentine-modal.hidden {
+  display: none;
+}
+
+.valentine-container {
+  background: linear-gradient(135deg, #fff0f5 0%, #ffd6e0 100%);
+  padding: 50px 60px;
+  border-radius: 30px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  border: 5px solid var(--heart-red);
+  max-width: 500px;
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.hearts {
+  font-size: 3em;
+  margin-bottom: 20px;
+  animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.valentine-container h2 {
+  font-size: 2em;
+  color: var(--heart-red);
+  margin-bottom: 30px;
+  font-weight: bold;
+}
+
+.button-group {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.btn-yes, .btn-no {
+  padding: 15px 40px;
+  font-size: 1.1em;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-yes {
+  background: linear-gradient(135deg, var(--heart-red), #ff8fa3);
+  color: white;
+}
+
+.btn-yes:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 20px rgba(255, 107, 157, 0.4);
+}
+
+.btn-no {
+  background: linear-gradient(135deg, #cccccc, #999999);
+  color: var(--text-dark);
+}
+
+.btn-no:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ================================
+   PIN Modal
+================================ */
+
+.pin-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(45, 27, 27, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.pin-modal.hidden {
+  display: none;
+}
+
+.pin-container {
+  background: linear-gradient(135deg, var(--heart-light) 0%, #ffd6e0 100%);
+  padding: 60px 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  max-width: 400px;
+  border: 4px solid var(--heart-red);
+}
+
+.pin-container h1 {
+  font-size: 2.5em;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+  text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+}
+
+.pin-container p {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+  color: var(--text-dark);
+  font-weight: bold;
+}
+
+#pinInput {
+  width: 100%;
+  padding: 15px;
+  font-size: 2em;
+  text-align: center;
+  letter-spacing: 10px;
+  border: 3px solid var(--heart-red);
+  border-radius: 10px;
+  background: white;
+  color: var(--heart-red);
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+#pinInput:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--heart-red);
+}
+
+#pinSubmit {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.2em;
+  font-weight: bold;
+  background: linear-gradient(135deg, var(--heart-red), #ff8fa3);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#pinSubmit:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(255, 107, 157, 0.4);
+}
+
+#pinSubmit:active {
+  transform: scale(0.98);
+}
+
+/* ================================
+   Drag & Drop Feedback
+================================ */
+
+.grid-cell.drag-over {
+  background: rgba(255, 107, 157, 0.2);
+  border-color: var(--heart-red);
+}
+
+/* ================================
+   Scrollbar Custom
+================================ */
+
+.game-grid::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.game-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+.game-grid::-webkit-scrollbar-thumb {
+  background: var(--wood);
+  border-radius: 6px;
+}
+
+.game-grid::-webkit-scrollbar-thumb:hover {
+  background: #6b5344;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 157, 0.5);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--heart-red);
+}
 body.vintage .footer {
   color: #c2b097;
   border-top: 1px solid rgba(201,151,76,0.3);
