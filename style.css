@@ -428,7 +428,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(45, 27, 27, 0.95);
+  background: linear-gradient(135deg, #5a9c2e 0%, #3d6b1a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -441,69 +441,80 @@ body {
 }
 
 .pin-container {
-  background: linear-gradient(135deg, var(--heart-light) 0%, #ffd6e0 100%);
-  padding: 60px 40px;
-  border-radius: 20px;
+  background: linear-gradient(180deg, #ffd6e0 0%, #ffe0eb 50%, #ffd6e0 100%);
+  padding: 50px 60px;
+  border-radius: 25px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.3);
   max-width: 600px;
-  border: 4px solid var(--heart-red);
+  border: 5px solid #ff6b9d;
 }
 
 .pin-container h1 {
   font-size: 2em;
-  margin-bottom: 20px;
-  color: var(--text-dark);
-  text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+  margin-bottom: 10px;
+  margin-top: 10px;
+  color: #5a3d3d;
+  text-shadow: 2px 2px 0px rgba(255,255,255,0.6);
   white-space: nowrap;
+  font-family: 'Pacifico', cursive;
 }
 
 .pin-container p {
-  font-size: 1.2em;
-  margin-bottom: 30px;
-  color: var(--text-dark);
+  font-size: 1.1em;
+  margin-bottom: 35px;
+  margin-top: 15px;
+  color: #5a3d3d;
   font-weight: bold;
+  letter-spacing: 0.5px;
 }
 
 #pinInput {
   width: 100%;
-  padding: 15px;
-  font-size: 2em;
+  padding: 16px;
+  font-size: 2.2em;
   text-align: center;
-  letter-spacing: 10px;
-  border: 3px solid var(--heart-red);
-  border-radius: 10px;
+  letter-spacing: 12px;
+  border: 4px solid #ff6b9d;
+  border-radius: 12px;
   background: white;
-  color: var(--heart-red);
-  margin-bottom: 20px;
+  color: #ff6b9d;
+  margin-bottom: 30px;
   font-weight: bold;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 10px rgba(255, 107, 157, 0.2);
+  transition: all 0.3s;
 }
 
 #pinInput:focus {
   outline: none;
-  box-shadow: 0 0 10px var(--heart-red);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 0 15px rgba(255, 107, 157, 0.5);
+  background: #fff9fc;
 }
 
 #pinSubmit {
   width: 100%;
-  padding: 15px;
-  font-size: 1.2em;
+  padding: 16px;
+  font-size: 1.3em;
   font-weight: bold;
-  background: linear-gradient(135deg, var(--heart-red), #ff8fa3);
+  background: linear-gradient(180deg, #ff6b9d 0%, #ff5587 100%);
   color: white;
-  border: none;
-  border-radius: 10px;
+  border: 3px solid #d63a5a;
+  border-radius: 12px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s;
+  box-shadow: 0 6px 15px rgba(255, 107, 157, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 
 #pinSubmit:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 15px rgba(255, 107, 157, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 107, 157, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  background: linear-gradient(180deg, #ff7ba8, #ff6693);
 }
 
 #pinSubmit:active {
-  transform: scale(0.98);
+  transform: translateY(0);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* ================================
