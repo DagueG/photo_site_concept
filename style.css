@@ -171,6 +171,29 @@ body {
   filter: grayscale(100%);
 }
 
+.reset-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+  color: white;
+  border: 2px solid #d63a5a;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.reset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
+}
+
+.reset-btn:active {
+  transform: translateY(0);
+}
+
 .tool-item img {
   width: 48px;
   height: 48px;

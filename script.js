@@ -36,6 +36,11 @@ const gameState = {
   dragStartY: 0,
   dragStartScrollX: 0,
   dragStartScrollY: 0,
+  lastDragX: 0, // Position souris précédente pour calculer vélocité
+  lastDragY: 0, // Position souris précédente pour calculer vélocité
+  scrollVelocityX: 0, // Inertie X
+  scrollVelocityY: 0, // Inertie Y
+  isInertia: false, // Appliquer l'inertie après drag
   waterFrame: 0 // Pour animer l'eau
 };
 
@@ -197,6 +202,12 @@ function initGame() {
   
   // Suivi position souris pour icône flottante
   document.addEventListener('mousemove', handleGlobalMouseMove);
+  
+  // Bouton Reset
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', handleResetMap);
+  }
   
   // Démarrer boucle
   startGameLoop();
@@ -430,6 +441,8 @@ function handleCanvasMouseDown(e) {
   gameState.dragStartY = e.clientY;
   gameState.dragStartScrollX = gameState.scrollX;
   gameState.dragStartScrollY = gameState.scrollY;
+  gameState.lastDragX = e.clientX; // Pour calculer vélocité
+  gameState.lastDragY = e.clientY; // Pour calculer vélocité
   canvas.style.cursor = 'grabbing';
 }
 
@@ -452,6 +465,15 @@ function handleCanvasMouseMove(e) {
   
   if (!gameState.isMapDragging) return;
   
+  // Calculer la vélocité (différence depuis la dernière position)
+  const dxMouse = e.clientX - gameState.lastDragX;
+  const dyMouse = e.clientY - gameState.lastDragY;
+  gameState.scrollVelocityX = -dxMouse; // Négatif car on scroll inverse du mouvement souris
+  gameState.scrollVelocityY = -dyMouse;
+  
+  gameState.lastDragX = e.clientX;
+  gameState.lastDragY = e.clientY;
+  
   const dx = e.clientX - gameState.dragStartX;
   const dy = e.clientY - gameState.dragStartY;
   
@@ -470,6 +492,9 @@ function handleCanvasMouseUp(e) {
   gameState.isMapDragging = false;
   gameState.isToolBrushing = false;
   canvas.style.cursor = 'grab';
+  
+  // Activer l'inertie (continue jusqu'à vélocité négligeable)
+  gameState.isInertia = true;
 }
 
 function handleGlobalMouseMove(e) {
@@ -481,12 +506,175 @@ function handleGlobalMouseMove(e) {
   }
 }
 
+function handleResetMap() {
+  // Afficher popup de confirmation
+  const confirmed = confirm('Es-tu sûr? Ça va effacer TOUTE la map!');
+  if (!confirmed) {
+    return;
+  }
+  
+  // Vider la grille
+  gameState.grid = {};
+  
+  // Générer de l'eau aléatoire
+  generateRandomWater();
+  
+  // Sauvegarder (en local ou Supabase selon le mode)
+  saveGameState();
+  
+  // Reset les outils équippés
+  gameState.equippedTool = null;
+  [document.getElementById('seedTool'), 
+   document.getElementById('shovelTool'), 
+   document.getElementById('bucketTool')].forEach(tool => {
+    if (tool) {
+      tool.classList.remove('equipped');
+    }
+  });
+  const floatingIcon = document.getElementById('floatingToolIcon');
+  if (floatingIcon) {
+    floatingIcon.classList.add('hidden');
+  }
+  
+  // Reset la quête
+  updateTreeCount();
+}
+
+function generateRandomWater() {
+  // Toujours générer de l'eau (100%)
+  
+  // Nombre de structures: 3 à 6
+  const numStructures = Math.floor(Math.random() * 4) + 3;
+  
+  for (let i = 0; i < numStructures; i++) {
+    const structureType = Math.floor(Math.random() * 3);
+    
+    if (structureType === 0) {
+      // Lac (zone circulaire)
+      generateLake();
+    } else if (structureType === 1) {
+      // Rivière (ligne sinueuse)
+      generateRiver();
+    } else {
+      // Côte (eau le long d'un bord)
+      generateCoast();
+    }
+  }
+}
+
+function generateLake() {
+  // Point central aléatoire
+  const centerCol = Math.floor(Math.random() * CONFIG.GRID_SIZE);
+  const centerRow = Math.floor(Math.random() * CONFIG.GRID_SIZE);
+  const radius = 8 + Math.floor(Math.random() * 15); // 8 à 23 de rayon (très grands)
+  
+  for (let row = Math.max(0, centerRow - radius); row <= Math.min(CONFIG.GRID_SIZE - 1, centerRow + radius); row++) {
+    for (let col = Math.max(0, centerCol - radius); col <= Math.min(CONFIG.GRID_SIZE - 1, centerCol + radius); col++) {
+      const distance = Math.sqrt((row - centerRow) ** 2 + (col - centerCol) ** 2);
+      if (distance <= radius && !gameState.grid[`${row}-${col}`]) {
+        gameState.grid[`${row}-${col}`] = { type: 'water' };
+      }
+    }
+  }
+}
+
+function generateRiver() {
+  // Rivière sinueuse du haut vers le bas
+  let col = Math.floor(Math.random() * CONFIG.GRID_SIZE);
+  const width = 6 + Math.floor(Math.random() * 8); // 6 à 14 de large (très large)
+  
+  for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
+    // Sinuosité: change aléatoirement
+    if (Math.random() > 0.6) {
+      col += Math.random() > 0.5 ? 1 : -1;
+    }
+    col = Math.max(0, Math.min(CONFIG.GRID_SIZE - 1, col));
+    
+    // Placer de l'eau sur la largeur
+    for (let w = 0; w < width; w++) {
+      const targetCol = Math.min(CONFIG.GRID_SIZE - 1, col + w);
+      const cellId = `${row}-${targetCol}`;
+      if (!gameState.grid[cellId]) {
+        gameState.grid[cellId] = { type: 'water' };
+      }
+    }
+  }
+}
+
+function generateCoast() {
+  // Côte aléatoire (eau le long d'un bord)
+  const side = Math.floor(Math.random() * 4); // 0=haut, 1=bas, 2=gauche, 3=droite
+  const thickness = 6 + Math.floor(Math.random() * 12); // 6 à 18 d'épaisseur (très épais)
+  
+  if (side === 0) {
+    // Haut
+    for (let row = 0; row < thickness; row++) {
+      for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
+        if (!gameState.grid[`${row}-${col}`]) {
+          gameState.grid[`${row}-${col}`] = { type: 'water' };
+        }
+      }
+    }
+  } else if (side === 1) {
+    // Bas
+    for (let row = CONFIG.GRID_SIZE - thickness; row < CONFIG.GRID_SIZE; row++) {
+      for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
+        if (!gameState.grid[`${row}-${col}`]) {
+          gameState.grid[`${row}-${col}`] = { type: 'water' };
+        }
+      }
+    }
+  } else if (side === 2) {
+    // Gauche
+    for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
+      for (let col = 0; col < thickness; col++) {
+        if (!gameState.grid[`${row}-${col}`]) {
+          gameState.grid[`${row}-${col}`] = { type: 'water' };
+        }
+      }
+    }
+  } else {
+    // Droite
+    for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
+      for (let col = CONFIG.GRID_SIZE - thickness; col < CONFIG.GRID_SIZE; col++) {
+        if (!gameState.grid[`${row}-${col}`]) {
+          gameState.grid[`${row}-${col}`] = { type: 'water' };
+        }
+      }
+    }
+  }
+}
+
 // ========== BOUCLE DE JEU ==========
 function startGameLoop() {
   let lastSaveTime = Date.now();
   let waterAnimationCounter = 0;
   
   setInterval(() => {
+    // Appliquer l'inertie si elle est active
+    if (gameState.isInertia) {
+      const maxScrollX = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE - canvas.width;
+      const maxScrollY = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE - canvas.height;
+      
+      gameState.scrollX += gameState.scrollVelocityX;
+      gameState.scrollY += gameState.scrollVelocityY;
+      
+      // Décélération (0.94 = diminue la vélocité de 6% chaque frame)
+      gameState.scrollVelocityX *= 0.94;
+      gameState.scrollVelocityY *= 0.94;
+      
+      // Garder dans les limites
+      gameState.scrollX = Math.max(0, Math.min(gameState.scrollX, maxScrollX));
+      gameState.scrollY = Math.max(0, Math.min(gameState.scrollY, maxScrollY));
+      
+      // Arrêter quand la vélocité est négligeable
+      if (Math.abs(gameState.scrollVelocityX) < 0.1 && Math.abs(gameState.scrollVelocityY) < 0.1) {
+        gameState.isInertia = false;
+        gameState.scrollVelocityX = 0;
+        gameState.scrollVelocityY = 0;
+      }
+    }
+    
     // Animer l'eau (changer de frame toutes les 500ms)
     waterAnimationCounter++;
     if (waterAnimationCounter % 10 === 0) {
