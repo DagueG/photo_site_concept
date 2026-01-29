@@ -10,8 +10,8 @@ const CONFIG = {
   GRID_SIZE: 100,
   CELL_SIZE: 64,
   TREE_GOAL: 14,
-  SEED_DURATION: 180000 + Math.random() * 120000, // 3 à 5 minutes en ms
-  SPROUT_DURATION: 5000, // 5 secondes supplémentaires en ms (total 10s)
+  SEED_DURATION: 1800 + Math.random() * 1200, // 1.8 à 3 secondes (x100 speed)
+  SPROUT_DURATION: 50, // 50ms (x100 speed)
   EMAIL: 'daniel.guedj.pro@gmail.com'
 };
 
@@ -77,6 +77,7 @@ function checkPin() {
     if (questBar) questBar.classList.add('hidden');
     loadGameState();
     initGame();
+    drawMinimap();
   } else if (entered === CONFIG.PIN_SHARED) {
     // Mode partagé (2609)
     gameState.isAuthenticated = true;
@@ -86,11 +87,11 @@ function checkPin() {
     // Montrer la quête en mode partagé
     const questBar = document.querySelector('.quest-bar');
     if (questBar) questBar.classList.remove('hidden');
-    loadGameState();
-    initGame();
-    document.getElementById('gameContainer').classList.remove('hidden');
-    loadGameState();
-    initGame();
+    // Charger depuis Supabase et ensuite initialiser
+    loadFromSupabase().then(() => {
+      initGame();
+      drawMinimap();
+    });
   } else {
     pinInput.value = '';
     pinInput.style.borderColor = '#ff6b9d';
@@ -188,6 +189,12 @@ function initGame() {
   const container = canvas.parentElement;
   canvas.width = container.clientWidth;
   canvas.height = container.clientHeight;
+  
+  // Centrer la caméra au milieu de la map
+  const mapWidth = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE;
+  const mapHeight = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE;
+  gameState.scrollX = Math.max(0, (mapWidth - canvas.width) / 2);
+  gameState.scrollY = Math.max(0, (mapHeight - canvas.height) / 2);
   
   // Charger les images
   loadAssets();
@@ -426,8 +433,8 @@ function handleMinimapClick(e) {
 function applyToolAction(toolId, cellId) {
   if (toolId === 'seedTool') {
     if (!gameState.grid[cellId]) {
-      // Durée aléatoire entre 30 et 50 minutes
-      const randomDuration = 1800000 + Math.random() * 1200000;
+      // Durée aléatoire entre 18 et 30 secondes (x100 speed)
+      const randomDuration = 18000 + Math.random() * 12000;
       gameState.grid[cellId] = {
         type: 'seed',
         stage: 1,
@@ -1131,23 +1138,44 @@ function openValentineModal() {
   
   const yesBtn = document.getElementById('yesBtn');
   const noBtn = document.getElementById('noBtn');
+  const closeBtn = document.getElementById('closeValentineBtn');
+  const messageTextarea = document.getElementById('valentineMessage');
+  
+  closeBtn.onclick = () => {
+    modal.classList.add('hidden');
+    // L'enveloppe reste visible
+  };
   
   yesBtn.onclick = () => {
-    sendEmail('Oui');
-    modal.classList.add('hidden');
-    document.getElementById('envelopeNotification').classList.add('hidden');
+    const confirmed = confirm('Tu es sûr(e) de vouloir dire oui? 💕');
+    if (confirmed) {
+      const message = messageTextarea.value;
+      sendEmail('Oui', message);
+      modal.classList.add('hidden');
+      document.getElementById('envelopeNotification').classList.add('hidden');
+      messageTextarea.value = '';
+    }
   };
   
   noBtn.onclick = () => {
-    modal.classList.add('hidden');
-    document.getElementById('envelopeNotification').classList.add('hidden');
+    const confirmed = confirm('Tu es sûr(e) de vouloir dire non?');
+    if (confirmed) {
+      const message = messageTextarea.value;
+      sendEmail('Non', message);
+      modal.classList.add('hidden');
+      document.getElementById('envelopeNotification').classList.add('hidden');
+      messageTextarea.value = '';
+    }
   };
 }
 
 // ========== ENVOI EMAIL ==========
-function sendEmail(response) {
+function sendEmail(response, message = '') {
   const formData = new FormData();
   formData.append('response', response);
+  if (message) {
+    formData.append('message', message);
+  }
   
   fetch('https://formspree.io/f/mojdbjvq', {
     method: 'POST',
