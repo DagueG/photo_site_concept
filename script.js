@@ -46,6 +46,7 @@ const gameState = {
 
 // Canvas & context
 let canvas, ctx;
+let minimapCanvas, minimapCtx;
 
 // ========== AUTHENTIFICATION ==========
 function setupAuth() {
@@ -178,6 +179,11 @@ function initGame() {
   canvas = document.getElementById('gameCanvas');
   ctx = canvas.getContext('2d');
   
+  minimapCanvas = document.getElementById('minimapCanvas');
+  minimapCtx = minimapCanvas.getContext('2d');
+  minimapCanvas.width = 150;
+  minimapCanvas.height = 150;
+  
   // Redimensionner canvas
   const container = canvas.parentElement;
   canvas.width = container.clientWidth;
@@ -197,6 +203,9 @@ function initGame() {
   canvas.addEventListener('mouseup', handleCanvasMouseUp);
   canvas.addEventListener('mouseleave', handleCanvasMouseUp);
   
+  // Minimap click
+  minimapCanvas.addEventListener('click', handleMinimapClick);
+  
   // Redimensionner canvas quand la fenetre change
   window.addEventListener('resize', handleWindowResize);
   
@@ -209,8 +218,14 @@ function initGame() {
     resetBtn.addEventListener('click', handleResetMap);
   }
   
+  // Ajouter event listener minimap
+  minimapCanvas.addEventListener('click', handleMinimapClick);
+  
   // Démarrer boucle
   startGameLoop();
+  
+  // Dessiner minimap une fois au démarrage
+  drawMinimap();
 }
 
 // ========== REDIMENSIONNEMENT FENETRE ==========
@@ -359,6 +374,8 @@ function handleCanvasWheel(e) {
   
   gameState.scrollX = Math.max(0, Math.min(gameState.scrollX, maxScrollX));
   gameState.scrollY = Math.max(0, Math.min(gameState.scrollY, maxScrollY));
+  
+  drawMinimap();
 }
 
 function handleCanvasClick(e) {
@@ -382,6 +399,30 @@ function handleCanvasClick(e) {
   applyToolAction(gameState.equippedTool, cellId);
 }
 
+function handleMinimapClick(e) {
+  const rect = minimapCanvas.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+  
+  const minimapScale = minimapCanvas.width / (CONFIG.GRID_SIZE * CONFIG.CELL_SIZE);
+  
+  // Convertir position minimap en coordonnées pixel du monde
+  const worldPixelX = clickX / minimapScale;
+  const worldPixelY = clickY / minimapScale;
+  
+  const viewportWidth = canvas.width;
+  const viewportHeight = canvas.height;
+  
+  const maxScrollX = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE - canvas.width;
+  const maxScrollY = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE - canvas.height;
+  
+  // Centrer sur le clic
+  gameState.scrollX = Math.max(0, Math.min(worldPixelX - viewportWidth / 2, maxScrollX));
+  gameState.scrollY = Math.max(0, Math.min(worldPixelY - viewportHeight / 2, maxScrollY));
+  
+  drawMinimap();
+}
+
 function applyToolAction(toolId, cellId) {
   if (toolId === 'seedTool') {
     if (!gameState.grid[cellId]) {
@@ -395,12 +436,14 @@ function applyToolAction(toolId, cellId) {
       };
       saveGameState();
       updateTreeCount();
+      drawMinimap();
     }
   } else if (toolId === 'shovelTool') {
     if (gameState.grid[cellId]) {
       delete gameState.grid[cellId];
       saveGameState();
       updateTreeCount();
+      drawMinimap();
     }
   } else if (toolId === 'bucketTool') {
     // Ajouter de l'eau seulement sur les cases vides
@@ -409,6 +452,7 @@ function applyToolAction(toolId, cellId) {
         type: 'water'
       };
       saveGameState();
+      drawMinimap();
     }
   }
 }
@@ -486,6 +530,8 @@ function handleCanvasMouseMove(e) {
   
   gameState.scrollX = Math.max(0, Math.min(gameState.scrollX, maxScrollX));
   gameState.scrollY = Math.max(0, Math.min(gameState.scrollY, maxScrollY));
+  
+  drawMinimap();
 }
 
 function handleCanvasMouseUp(e) {
@@ -495,6 +541,8 @@ function handleCanvasMouseUp(e) {
   
   // Activer l'inertie (continue jusqu'à vélocité négligeable)
   gameState.isInertia = true;
+  
+  drawMinimap();
 }
 
 function handleGlobalMouseMove(e) {
@@ -538,6 +586,9 @@ function handleResetMap() {
   
   // Reset la quête
   updateTreeCount();
+  
+  // Rafraîchir la minimap
+  drawMinimap();
 }
 
 function generateRandomWater() {
@@ -809,6 +860,11 @@ function startGameLoop() {
     // Dessiner
     drawGame();
     
+    // Mettre à jour minimap si en train de faire de l'inertie
+    if (gameState.isInertia) {
+      drawMinimap();
+    }
+    
     // Mettre à jour compteur
     updateTreeCount();
     
@@ -818,6 +874,58 @@ function startGameLoop() {
       lastSaveTime = Date.now();
     }
   }, 50);
+}
+
+// ========== MINIMAP ==========
+function drawMinimap() {
+  if (!minimapCtx || !minimapCanvas) return;
+  
+  // Remplir le fond noir
+  minimapCtx.fillStyle = '#000000';
+  minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+  
+  // Remplir de vert pour les cellules vides
+  minimapCtx.fillStyle = '#29600e';
+  minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+  
+  const cellPixelSize = minimapCanvas.width / CONFIG.GRID_SIZE;
+  
+  // Dessiner l'eau et les plantes
+  Object.keys(gameState.grid).forEach(cellId => {
+    const cell = gameState.grid[cellId];
+    const [row, col] = cellId.split('-').map(Number);
+    
+    if (row < 0 || row >= CONFIG.GRID_SIZE || col < 0 || col >= CONFIG.GRID_SIZE) return;
+    
+    const x = col * cellPixelSize;
+    const y = row * cellPixelSize;
+    const size = cellPixelSize;
+    
+    if (cell.type === 'water') {
+      minimapCtx.fillStyle = '#3a7fd8';
+      minimapCtx.fillRect(x, y, size, size);
+    } else if (cell.type === 'seed' || cell.type === 'sprout' || cell.type === 'tree') {
+      minimapCtx.fillStyle = '#9b59b6';
+      minimapCtx.fillRect(x, y, size, size);
+    }
+  });
+  
+  // Dessiner le viewport actuel en rose
+  const viewportX = gameState.scrollX / CONFIG.CELL_SIZE;
+  const viewportY = gameState.scrollY / CONFIG.CELL_SIZE;
+  const viewportWidth = canvas.width / CONFIG.CELL_SIZE;
+  const viewportHeight = canvas.height / CONFIG.CELL_SIZE;
+  
+  const minimapCellSize = minimapCanvas.width / CONFIG.GRID_SIZE;
+  
+  minimapCtx.strokeStyle = '#ff6b9d';
+  minimapCtx.lineWidth = 2;
+  minimapCtx.strokeRect(
+    viewportX * minimapCellSize,
+    viewportY * minimapCellSize,
+    viewportWidth * minimapCellSize,
+    viewportHeight * minimapCellSize
+  );
 }
 
 // ========== DESSIN ==========
@@ -867,15 +975,16 @@ function drawGame() {
           const bottomRightNeighbor = row < CONFIG.GRID_SIZE - 1 && col < CONFIG.GRID_SIZE - 1 ? gameState.grid[`${row+1}-${col+1}`] : null;
           
           // Vérifier si voisin est herbe (pas d'eau)
-          const topIsHerb = !topNeighbor || topNeighbor.type !== 'water';
-          const bottomIsHerb = !bottomNeighbor || bottomNeighbor.type !== 'water';
-          const leftIsHerb = !leftNeighbor || leftNeighbor.type !== 'water';
-          const rightIsHerb = !rightNeighbor || rightNeighbor.type !== 'water';
+          // Les bords de la map sont traités comme de l'eau
+          const topIsHerb = (row === 0) ? false : (!topNeighbor || topNeighbor.type !== 'water');
+          const bottomIsHerb = (row === CONFIG.GRID_SIZE - 1) ? false : (!bottomNeighbor || bottomNeighbor.type !== 'water');
+          const leftIsHerb = (col === 0) ? false : (!leftNeighbor || leftNeighbor.type !== 'water');
+          const rightIsHerb = (col === CONFIG.GRID_SIZE - 1) ? false : (!rightNeighbor || rightNeighbor.type !== 'water');
           
-          const topLeftIsHerb = !topLeftNeighbor || topLeftNeighbor.type !== 'water';
-          const topRightIsHerb = !topRightNeighbor || topRightNeighbor.type !== 'water';
-          const bottomLeftIsHerb = !bottomLeftNeighbor || bottomLeftNeighbor.type !== 'water';
-          const bottomRightIsHerb = !bottomRightNeighbor || bottomRightNeighbor.type !== 'water';
+          const topLeftIsHerb = (row === 0 || col === 0) ? false : (!topLeftNeighbor || topLeftNeighbor.type !== 'water');
+          const topRightIsHerb = (row === 0 || col === CONFIG.GRID_SIZE - 1) ? false : (!topRightNeighbor || topRightNeighbor.type !== 'water');
+          const bottomLeftIsHerb = (row === CONFIG.GRID_SIZE - 1 || col === 0) ? false : (!bottomLeftNeighbor || bottomLeftNeighbor.type !== 'water');
+          const bottomRightIsHerb = (row === CONFIG.GRID_SIZE - 1 || col === CONFIG.GRID_SIZE - 1) ? false : (!bottomRightNeighbor || bottomRightNeighbor.type !== 'water');
           
           const touchesHerb = topIsHerb || bottomIsHerb || leftIsHerb || rightIsHerb || 
                               topLeftIsHerb || topRightIsHerb || bottomLeftIsHerb || bottomRightIsHerb;
