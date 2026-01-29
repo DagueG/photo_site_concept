@@ -543,35 +543,47 @@ function handleResetMap() {
 function generateRandomWater() {
   // Toujours générer de l'eau (100%)
   
-  // Nombre de structures: 3 à 6
-  const numStructures = Math.floor(Math.random() * 4) + 3;
+  // Générer 1 rivière + 1 côte + plusieurs lacs (5-8)
+  generateRiver();
+  generateCoast();
   
-  for (let i = 0; i < numStructures; i++) {
-    const structureType = Math.floor(Math.random() * 3);
-    
-    if (structureType === 0) {
-      // Lac (zone circulaire)
-      generateLake();
-    } else if (structureType === 1) {
-      // Rivière (ligne sinueuse)
-      generateRiver();
-    } else {
-      // Côte (eau le long d'un bord)
-      generateCoast();
-    }
+  // Générer 5 à 8 lacs
+  const numLakes = 5 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < numLakes; i++) {
+    generateLake();
   }
 }
 
 function generateLake() {
-  // Point central aléatoire
-  const centerCol = Math.floor(Math.random() * CONFIG.GRID_SIZE);
-  const centerRow = Math.floor(Math.random() * CONFIG.GRID_SIZE);
-  const radius = 8 + Math.floor(Math.random() * 15); // 8 à 23 de rayon (très grands)
+  // Éviter les collisions avec plages et rivières
+  const centerCol = Math.floor(Math.random() * (CONFIG.GRID_SIZE * 0.6)) + CONFIG.GRID_SIZE * 0.2;
+  const centerRow = Math.floor(Math.random() * (CONFIG.GRID_SIZE * 0.6)) + CONFIG.GRID_SIZE * 0.2;
+  const baseRadius = 6 + Math.floor(Math.random() * 12); // 6 à 18 de rayon (plus petit)
   
-  for (let row = Math.max(0, centerRow - radius); row <= Math.min(CONFIG.GRID_SIZE - 1, centerRow + radius); row++) {
-    for (let col = Math.max(0, centerCol - radius); col <= Math.min(CONFIG.GRID_SIZE - 1, centerCol + radius); col++) {
+  // Vérifier que le centre n'est pas trop près des bords
+  if (centerRow < 15 || centerRow > CONFIG.GRID_SIZE - 15 || centerCol < 15 || centerCol > CONFIG.GRID_SIZE - 15) {
+    return; // Rejeter si trop près du bord
+  }
+  
+  // Variation aléatoire par angle pour créer des formes irrégulières mais fluides
+  const radiusVariation = {};
+  let lastVariation = 0.85 + Math.random() * 0.3; // 0.85 à 1.15
+  
+  for (let angle = 0; angle < 360; angle += 2) {
+    lastVariation += (Math.random() - 0.5) * 0.1;
+    lastVariation = Math.max(0.8, Math.min(1.2, lastVariation));
+    radiusVariation[angle] = baseRadius * lastVariation;
+  }
+  
+  for (let row = Math.max(0, centerRow - baseRadius - 2); row <= Math.min(CONFIG.GRID_SIZE - 1, centerRow + baseRadius + 2); row++) {
+    for (let col = Math.max(0, centerCol - baseRadius - 2); col <= Math.min(CONFIG.GRID_SIZE - 1, centerCol + baseRadius + 2); col++) {
       const distance = Math.sqrt((row - centerRow) ** 2 + (col - centerCol) ** 2);
-      if (distance <= radius && !gameState.grid[`${row}-${col}`]) {
+      let angle = Math.atan2(row - centerRow, col - centerCol) * 180 / Math.PI;
+      if (angle < 0) angle += 360;
+      angle = Math.floor(angle / 2) * 2;
+      
+      const maxDist = radiusVariation[angle] || baseRadius;
+      if (distance <= maxDist && !gameState.grid[`${row}-${col}`]) {
         gameState.grid[`${row}-${col}`] = { type: 'water' };
       }
     }
@@ -579,54 +591,136 @@ function generateLake() {
 }
 
 function generateRiver() {
-  // Rivière sinueuse du haut vers le bas
-  let col = Math.floor(Math.random() * CONFIG.GRID_SIZE);
-  const width = 6 + Math.floor(Math.random() * 8); // 6 à 14 de large (très large)
+  // Rivière qui doit toucher DEUX bords différents de la map
+  let validRiver = false;
+  let attempts = 0;
   
-  for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
-    // Sinuosité: change aléatoirement
-    if (Math.random() > 0.6) {
-      col += Math.random() > 0.5 ? 1 : -1;
-    }
-    col = Math.max(0, Math.min(CONFIG.GRID_SIZE - 1, col));
+  while (!validRiver && attempts < 10) {
+    attempts++;
+    const width = 6 + Math.floor(Math.random() * 8); // 6 à 14 de large
     
-    // Placer de l'eau sur la largeur
-    for (let w = 0; w < width; w++) {
-      const targetCol = Math.min(CONFIG.GRID_SIZE - 1, col + w);
-      const cellId = `${row}-${targetCol}`;
-      if (!gameState.grid[cellId]) {
-        gameState.grid[cellId] = { type: 'water' };
+    // Choisir deux bords différents
+    let startSide = Math.floor(Math.random() * 4); // 0=haut, 1=bas, 2=gauche, 3=droite
+    let endSide = Math.floor(Math.random() * 4);
+    
+    // S'assurer que les deux bords sont différents
+    while (endSide === startSide) {
+      endSide = Math.floor(Math.random() * 4);
+    }
+    
+    let row, col, direction;
+    
+    if (startSide === 0) {
+      // Départ du haut, direction vers le bas
+      row = 0 + Math.random() * 5;
+      col = Math.random() * CONFIG.GRID_SIZE;
+      direction = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 6;
+    } else if (startSide === 1) {
+      // Départ du bas, direction vers le haut
+      row = CONFIG.GRID_SIZE - 5 + Math.random() * 5;
+      col = Math.random() * CONFIG.GRID_SIZE;
+      direction = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 6;
+    } else if (startSide === 2) {
+      // Départ de la gauche, direction vers la droite
+      row = Math.random() * CONFIG.GRID_SIZE;
+      col = 0 + Math.random() * 5;
+      direction = 0 + (Math.random() - 0.5) * Math.PI / 6;
+    } else {
+      // Départ de la droite, direction vers la gauche
+      row = Math.random() * CONFIG.GRID_SIZE;
+      col = CONFIG.GRID_SIZE - 5 + Math.random() * 5;
+      direction = Math.PI + (Math.random() - 0.5) * Math.PI / 6;
+    }
+    
+    const riverCells = [];
+    
+    // Continuer jusqu'à sortir de la map
+    for (let i = 0; i < CONFIG.GRID_SIZE * 3; i++) {
+      // Changer légèrement de direction (virage)
+      if (Math.random() > 0.75) {
+        direction += (Math.random() - 0.5) * Math.PI / 6; // Virage jusqu'à 30 degrés
+      }
+      
+      // Avancer dans la direction actuelle (petit pas pour continuité)
+      row += Math.sin(direction) * 0.5;
+      col += Math.cos(direction) * 0.5;
+      
+      // Placer de l'eau sur la largeur (circulaire autour du centre)
+      for (let w = 0; w < width; w++) {
+        for (let h = 0; h < width; h++) {
+          const distance = Math.sqrt((w - width/2) ** 2 + (h - width/2) ** 2);
+          if (distance <= width / 2) {
+            const offsetAngle = direction + Math.PI / 2; // Perpendiculaire
+            const offsetRow = Math.floor(row + Math.sin(offsetAngle) * (w - width/2));
+            const offsetCol = Math.floor(col + Math.cos(offsetAngle) * (h - width/2));
+            
+            if (offsetRow >= 0 && offsetRow < CONFIG.GRID_SIZE && offsetCol >= 0 && offsetCol < CONFIG.GRID_SIZE) {
+              riverCells.push(`${offsetRow}-${offsetCol}`);
+            }
+          }
+        }
+      }
+      
+      // Vérifier si on a touché le bord de sortie voulu
+      let touchedBorder = -1;
+      if (row < -2) touchedBorder = 0; // haut
+      else if (row > CONFIG.GRID_SIZE + 1) touchedBorder = 1; // bas
+      else if (col < -2) touchedBorder = 2; // gauche
+      else if (col > CONFIG.GRID_SIZE + 1) touchedBorder = 3; // droite
+      
+      // Si on a touché un bord différent du départ, c'est bon
+      if (touchedBorder !== -1 && touchedBorder === endSide) {
+        // Placer tous les cellules de la rivière
+        riverCells.forEach(cellId => {
+          if (!gameState.grid[cellId]) {
+            gameState.grid[cellId] = { type: 'water' };
+          }
+        });
+        validRiver = true;
+        break;
+      }
+      
+      // Si on est sorti par un mauvais bord, arrêter cette tentative
+      if (touchedBorder !== -1 && touchedBorder !== endSide && touchedBorder !== startSide) {
+        break;
       }
     }
   }
 }
 
 function generateCoast() {
-  // Côte aléatoire (eau le long d'un bord)
+  // Côte aléatoire limitée à un seul bord et plus courte
   const side = Math.floor(Math.random() * 4); // 0=haut, 1=bas, 2=gauche, 3=droite
-  const thickness = 6 + Math.floor(Math.random() * 12); // 6 à 18 d'épaisseur (très épais)
+  const baseThickness = 4 + Math.floor(Math.random() * 6); // 4 à 10 d'épaisseur (plus court)
+  const variance = Math.random() * 0.4 + 0.6; // 0.6 à 1.0 multiplicateur
   
   if (side === 0) {
-    // Haut
-    for (let row = 0; row < thickness; row++) {
-      for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
+    // Haut - ondulant
+    for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
+      const variation = Math.sin(col * 0.1) * baseThickness * 0.3 + baseThickness * variance;
+      const thickness = Math.floor(variation);
+      for (let row = 0; row < thickness; row++) {
         if (!gameState.grid[`${row}-${col}`]) {
           gameState.grid[`${row}-${col}`] = { type: 'water' };
         }
       }
     }
   } else if (side === 1) {
-    // Bas
-    for (let row = CONFIG.GRID_SIZE - thickness; row < CONFIG.GRID_SIZE; row++) {
-      for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
-        if (!gameState.grid[`${row}-${col}`]) {
+    // Bas - ondulant
+    for (let col = 0; col < CONFIG.GRID_SIZE; col++) {
+      const variation = Math.sin(col * 0.1) * baseThickness * 0.3 + baseThickness * variance;
+      const thickness = Math.floor(variation);
+      for (let row = CONFIG.GRID_SIZE - thickness; row < CONFIG.GRID_SIZE; row++) {
+        if (row >= 0 && !gameState.grid[`${row}-${col}`]) {
           gameState.grid[`${row}-${col}`] = { type: 'water' };
         }
       }
     }
   } else if (side === 2) {
-    // Gauche
+    // Gauche - ondulant
     for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
+      const variation = Math.sin(row * 0.1) * baseThickness * 0.3 + baseThickness * variance;
+      const thickness = Math.floor(variation);
       for (let col = 0; col < thickness; col++) {
         if (!gameState.grid[`${row}-${col}`]) {
           gameState.grid[`${row}-${col}`] = { type: 'water' };
@@ -634,10 +728,12 @@ function generateCoast() {
       }
     }
   } else {
-    // Droite
+    // Droite - ondulant
     for (let row = 0; row < CONFIG.GRID_SIZE; row++) {
+      const variation = Math.sin(row * 0.1) * baseThickness * 0.3 + baseThickness * variance;
+      const thickness = Math.floor(variation);
       for (let col = CONFIG.GRID_SIZE - thickness; col < CONFIG.GRID_SIZE; col++) {
-        if (!gameState.grid[`${row}-${col}`]) {
+        if (col >= 0 && !gameState.grid[`${row}-${col}`]) {
           gameState.grid[`${row}-${col}`] = { type: 'water' };
         }
       }
