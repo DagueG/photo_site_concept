@@ -10,8 +10,8 @@ const CONFIG = {
   GRID_SIZE: 100,
   CELL_SIZE: 64,
   TREE_GOAL: 14,
-  SEED_DURATION: 1800 + Math.random() * 1200, // 1.8 à 3 secondes (x100 speed)
-  SPROUT_DURATION: 50, // 50ms (x100 speed)
+  SEED_DURATION: 180000 + Math.random() * 120000, // 3 à 5 minutes en ms
+  SPROUT_DURATION: 5000, // 5 secondes supplémentaires en ms
   EMAIL: 'daniel.guedj.pro@gmail.com'
 };
 
@@ -433,8 +433,8 @@ function handleMinimapClick(e) {
 function applyToolAction(toolId, cellId) {
   if (toolId === 'seedTool') {
     if (!gameState.grid[cellId]) {
-      // Durée aléatoire entre 18 et 30 secondes (x100 speed)
-      const randomDuration = 18000 + Math.random() * 12000;
+      // Durée aléatoire entre 30 et 50 minutes
+      const randomDuration = 1800000 + Math.random() * 1200000;
       gameState.grid[cellId] = {
         type: 'seed',
         stage: 1,
