@@ -10,7 +10,7 @@ const CONFIG = {
   GRID_SIZE: 100,
   CELL_SIZE: 64,
   TREE_GOAL: 14,
-  SEED_DURATION: 5000, // 5 secondes en ms
+  SEED_DURATION: 180000 + Math.random() * 120000, // 3 à 5 minutes en ms
   SPROUT_DURATION: 5000, // 5 secondes supplémentaires en ms (total 10s)
   EMAIL: 'daniel.guedj.pro@gmail.com'
 };
@@ -318,8 +318,8 @@ function handleCanvasDrop(e) {
   
   if (gameState.draggedTool === 'seedTool') {
     if (!gameState.grid[cellId]) {
-      // Durée aléatoire entre 10 et 20 secondes
-      const randomDuration = 10000 + Math.random() * 10000;
+      // Durée aléatoire entre 30 et 50 minutes
+      const randomDuration = 1800000 + Math.random() * 1200000;
       gameState.grid[cellId] = {
         type: 'seed',
         stage: 1,
@@ -385,8 +385,8 @@ function handleCanvasClick(e) {
 function applyToolAction(toolId, cellId) {
   if (toolId === 'seedTool') {
     if (!gameState.grid[cellId]) {
-      // Durée aléatoire entre 10 et 20 secondes
-      const randomDuration = 10000 + Math.random() * 10000;
+      // Durée aléatoire entre 30 et 50 minutes
+      const randomDuration = 1800000 + Math.random() * 1200000;
       gameState.grid[cellId] = {
         type: 'seed',
         stage: 1,
@@ -1059,6 +1059,31 @@ function sendEmail(response) {
 
 // ========== INIT ==========
 document.addEventListener('DOMContentLoaded', () => {
+  // Animer les pousses du header/modal dès le chargement
+  animateSprouts();
+  
   setupAuth();
   setupDragDrop();
 });
+
+// Animer les pousses (header et modal PIN)
+function animateSprouts() {
+  const sproutAnimationStartTime = Date.now();
+  
+  setInterval(() => {
+    const elapsed = Date.now() - sproutAnimationStartTime;
+    const cycleDuration = 7000; // Même durée que les plantes
+    const positionInCycle = elapsed % cycleDuration;
+    
+    let sproutFrame = 1;
+    if (positionInCycle < 1000) sproutFrame = 1;
+    else if (positionInCycle < 3000) sproutFrame = 2;
+    else if (positionInCycle < 4000) sproutFrame = 1;
+    else sproutFrame = 3;
+    
+    const allSprouts = document.querySelectorAll('.header-sprout');
+    allSprouts.forEach(sprout => {
+      sprout.src = `assets/img/sprout_${sproutFrame}.png`;
+    });
+  }, 50);
+}
