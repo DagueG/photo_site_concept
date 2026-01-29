@@ -6,6 +6,7 @@
 // Configuration
 const CONFIG = {
   PIN: '1234',
+  PIN_SHARED: '2609',
   GRID_SIZE: 100,
   CELL_SIZE: 64,
   TREE_GOAL: 14,
@@ -14,16 +15,23 @@ const CONFIG = {
   EMAIL: 'daniel.guedj.pro@gmail.com'
 };
 
+// Supabase Config
+const SUPABASE_URL = 'https://ydwgxkoophokwizxqsyj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_4thxPpvJmu8pnmkshxPqGg_aI-_3l3z';
+
 // State
 const gameState = {
   grid: {},
   draggedTool: null,
+  isSharedMode: false, // true si PIN 2609, false si PIN 1234
+  equippedTool: null, // Outil actuellement équippé
   isAuthenticated: false,
   valentineShown: false,
   scrollX: 0,
   scrollY: 0,
   images: {},
   isMapDragging: false,
+  isToolBrushing: false, // Flag pour drag avec outil équippé
   dragStartX: 0,
   dragStartY: 0,
   dragStartScrollX: 0,
@@ -53,8 +61,27 @@ function checkPin() {
   const entered = pinInput.value.trim();
   
   if (entered === CONFIG.PIN) {
+    // Mode local (1234)
     gameState.isAuthenticated = true;
+    gameState.isSharedMode = false;
     document.getElementById('pinModal').classList.add('hidden');
+    document.getElementById('gameContainer').classList.remove('hidden');
+    // Cacher la quête en mode local
+    const questBar = document.querySelector('.quest-bar');
+    if (questBar) questBar.classList.add('hidden');
+    loadGameState();
+    initGame();
+  } else if (entered === CONFIG.PIN_SHARED) {
+    // Mode partagé (2609)
+    gameState.isAuthenticated = true;
+    gameState.isSharedMode = true;
+    document.getElementById('pinModal').classList.add('hidden');
+    document.getElementById('gameContainer').classList.remove('hidden');
+    // Montrer la quête en mode partagé
+    const questBar = document.querySelector('.quest-bar');
+    if (questBar) questBar.classList.remove('hidden');
+    loadGameState();
+    initGame();
     document.getElementById('gameContainer').classList.remove('hidden');
     loadGameState();
     initGame();
@@ -71,13 +98,73 @@ function checkPin() {
 
 // ========== SAUVEGARDE / CHARGEMENT ==========
 function saveGameState() {
-  localStorage.setItem('valentineGrid', JSON.stringify(gameState.grid));
+  if (gameState.isSharedMode) {
+    // Sauvegarder sur Supabase
+    saveToSupabase();
+  } else {
+    // Sauvegarder en local
+    localStorage.setItem('valentineGrid', JSON.stringify(gameState.grid));
+  }
 }
 
 function loadGameState() {
-  const saved = localStorage.getItem('valentineGrid');
-  if (saved) {
-    gameState.grid = JSON.parse(saved);
+  if (gameState.isSharedMode) {
+    // Charger depuis Supabase
+    loadFromSupabase();
+  } else {
+    // Charger depuis localStorage
+    const saved = localStorage.getItem('valentineGrid');
+    if (saved) {
+      gameState.grid = JSON.parse(saved);
+    }
+  }
+}
+
+async function saveToSupabase() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/shared_map?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        grid: gameState.grid,
+        updated_at: new Date().toISOString()
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('Supabase save error:', response.status, response.statusText);
+    }
+  } catch (error) {
+    console.error('Erreur sauvegarde Supabase:', error);
+  }
+}
+
+async function loadFromSupabase() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/shared_map?id=eq.1`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.length > 0) {
+        gameState.grid = data[0].grid || {};
+      }
+    } else {
+      console.error('Supabase load error:', response.status, response.statusText);
+    }
+  } catch (error) {
+    console.error('Erreur chargement Supabase:', error);
   }
 }
 
@@ -107,6 +194,9 @@ function initGame() {
   
   // Redimensionner canvas quand la fenetre change
   window.addEventListener('resize', handleWindowResize);
+  
+  // Suivi position souris pour icône flottante
+  document.addEventListener('mousemove', handleGlobalMouseMove);
   
   // Démarrer boucle
   startGameLoop();
@@ -143,6 +233,38 @@ function setupDragDrop() {
   
   [seedTool, shovelTool, bucketTool].forEach(tool => {
     if (!tool) return;
+    
+    // Click to toggle equipped visual
+    tool.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const floatingIcon = document.getElementById('floatingToolIcon');
+      
+      // Si c'est le même outil équippé, le dégrise
+      if (tool.classList.contains('equipped')) {
+        tool.classList.remove('equipped');
+        floatingIcon.classList.add('hidden');
+        gameState.equippedTool = null;
+      } else {
+        // Sinon, dégrise tous les autres et équipe celui-ci
+        [seedTool, shovelTool, bucketTool].forEach(t => {
+          if (t && t !== tool) {
+            t.classList.remove('equipped');
+          }
+        });
+        
+        tool.classList.add('equipped');
+        gameState.equippedTool = tool.id;
+        
+        // Show floating icon
+        const img = tool.querySelector('img');
+        floatingIcon.innerHTML = `<img src="${img.src}" alt="${img.alt}"/>`;
+        floatingIcon.classList.remove('hidden');
+        // Position l'icône immédiatement sous la souris
+        floatingIcon.style.left = (e.clientX - 24) + 'px';
+        floatingIcon.style.top = (e.clientY - 24) + 'px';
+      }
+    });
+    
     tool.addEventListener('dragstart', (e) => {
       gameState.draggedTool = tool.id;
       e.dataTransfer.effectAllowed = 'copy';
@@ -203,15 +325,13 @@ function handleCanvasDrop(e) {
       updateTreeCount();
     }
   } else if (gameState.draggedTool === 'bucketTool') {
-    // Ajouter/retirer l'eau (toggle)
-    if (gameState.grid[cellId] && gameState.grid[cellId].type === 'water') {
-      delete gameState.grid[cellId];
-    } else {
+    // Ajouter de l'eau seulement sur les cases vides
+    if (!gameState.grid[cellId]) {
       gameState.grid[cellId] = {
         type: 'water'
       };
+      saveGameState();
     }
-    saveGameState();
   }
 }
 
@@ -231,13 +351,79 @@ function handleCanvasWheel(e) {
 }
 
 function handleCanvasClick(e) {
-  // Les clics ne font rien - utiliser la pelle pour supprimer
+  // Si un outil est équippé, appliquer son action au clic
+  if (!gameState.equippedTool) return;
+  
+  // Calculer position sur la grille
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left + gameState.scrollX;
+  const y = e.clientY - rect.top + gameState.scrollY;
+  
+  const col = Math.floor(x / CONFIG.CELL_SIZE);
+  const row = Math.floor(y / CONFIG.CELL_SIZE);
+  
+  // Vérifier limites
+  if (row < 0 || row >= CONFIG.GRID_SIZE || col < 0 || col >= CONFIG.GRID_SIZE) {
+    return;
+  }
+  
+  const cellId = `${row}-${col}`;
+  applyToolAction(gameState.equippedTool, cellId);
+}
+
+function applyToolAction(toolId, cellId) {
+  if (toolId === 'seedTool') {
+    if (!gameState.grid[cellId]) {
+      // Durée aléatoire entre 10 et 20 secondes
+      const randomDuration = 10000 + Math.random() * 10000;
+      gameState.grid[cellId] = {
+        type: 'seed',
+        stage: 1,
+        plantedAt: Date.now(),
+        growthDuration: randomDuration
+      };
+      saveGameState();
+      updateTreeCount();
+    }
+  } else if (toolId === 'shovelTool') {
+    if (gameState.grid[cellId]) {
+      delete gameState.grid[cellId];
+      saveGameState();
+      updateTreeCount();
+    }
+  } else if (toolId === 'bucketTool') {
+    // Ajouter de l'eau seulement sur les cases vides
+    if (!gameState.grid[cellId]) {
+      gameState.grid[cellId] = {
+        type: 'water'
+      };
+      saveGameState();
+    }
+  }
 }
 
 // ========== DRAG MAP ==========
 function handleCanvasMouseDown(e) {
   // Seulement avec le bouton gauche
   if (e.button !== 0) return;
+  
+  // Si un outil est équippé, commencer un "brush drag"
+  if (gameState.equippedTool) {
+    gameState.isToolBrushing = true;
+    // Appliquer immédiatement à la case cliquée
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left + gameState.scrollX;
+    const y = e.clientY - rect.top + gameState.scrollY;
+    
+    const col = Math.floor(x / CONFIG.CELL_SIZE);
+    const row = Math.floor(y / CONFIG.CELL_SIZE);
+    
+    if (row >= 0 && row < CONFIG.GRID_SIZE && col >= 0 && col < CONFIG.GRID_SIZE) {
+      const cellId = `${row}-${col}`;
+      applyToolAction(gameState.equippedTool, cellId);
+    }
+    return;
+  }
   
   gameState.isMapDragging = true;
   gameState.dragStartX = e.clientX;
@@ -248,6 +434,22 @@ function handleCanvasMouseDown(e) {
 }
 
 function handleCanvasMouseMove(e) {
+  // Si on est en train de brush avec un outil, appliquer l'action
+  if (gameState.isToolBrushing && gameState.equippedTool) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left + gameState.scrollX;
+    const y = e.clientY - rect.top + gameState.scrollY;
+    
+    const col = Math.floor(x / CONFIG.CELL_SIZE);
+    const row = Math.floor(y / CONFIG.CELL_SIZE);
+    
+    if (row >= 0 && row < CONFIG.GRID_SIZE && col >= 0 && col < CONFIG.GRID_SIZE) {
+      const cellId = `${row}-${col}`;
+      applyToolAction(gameState.equippedTool, cellId);
+    }
+    return;
+  }
+  
   if (!gameState.isMapDragging) return;
   
   const dx = e.clientX - gameState.dragStartX;
@@ -266,7 +468,17 @@ function handleCanvasMouseMove(e) {
 
 function handleCanvasMouseUp(e) {
   gameState.isMapDragging = false;
+  gameState.isToolBrushing = false;
   canvas.style.cursor = 'grab';
+}
+
+function handleGlobalMouseMove(e) {
+  const floatingIcon = document.getElementById('floatingToolIcon');
+  if (!floatingIcon.classList.contains('hidden')) {
+    // Position l'icône sous la souris avec un petit offset
+    floatingIcon.style.left = (e.clientX - 24) + 'px';
+    floatingIcon.style.top = (e.clientY - 24) + 'px';
+  }
 }
 
 // ========== BOUCLE DE JEU ==========
@@ -484,6 +696,11 @@ function drawGame() {
 
 // ========== COMPTEUR ARBRES ==========
 function updateTreeCount() {
+  // La quête n'existe que en mode partagé (2609)
+  if (!gameState.isSharedMode) {
+    return;
+  }
+  
   let treeCount = 0;
   
   Object.keys(gameState.grid).forEach(cellId => {

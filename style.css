@@ -38,6 +38,26 @@ body {
   display: none !important;
 }
 
+.floating-tool-icon {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  width: 48px;
+  height: 48px;
+  opacity: 0.8;
+}
+
+.floating-tool-icon img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.floating-tool-icon.hidden {
+  display: none !important;
+}
+
 /* ================================
    Game Container
 ================================ */
@@ -144,6 +164,11 @@ body {
 
 .tool-item:active {
   cursor: grabbing;
+}
+
+.tool-item.equipped img {
+  opacity: 0.5;
+  filter: grayscale(100%);
 }
 
 .tool-item img {
